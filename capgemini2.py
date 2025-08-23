@@ -19,6 +19,17 @@ def validar_email(email: str) -> bool:
     padrao = r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$'
     return re.match(padrao, email) is not None
 
+def extrair_email_do_texto(texto: str) -> str:
+    """
+    Extrai o primeiro e-mail encontrado no texto do currículo
+    """
+    padrao_email = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    matches = re.findall(padrao_email, texto)
+    
+    if matches:
+        return matches[0]  # Retorna o primeiro e-mail encontrado
+    return None
+
 class AnalisadorCurriculo:
     def __init__(self):
         # Configurações das palavras-chave por categoria
@@ -38,45 +49,6 @@ class AnalisadorCurriculo:
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
         
-    def configurar_email_destino(self):
-        """
-        Permite ao usuário configurar o e-mail de destino
-        """
-        print("\n" + "="*50)
-        print("CONFIGURAÇÃO DO E-MAIL DE DESTINO")
-        print("="*50)
-        
-        while True:
-            print("\nPara qual e-mail você quer enviar o resultado da análise?")
-            print("1. E-mail padrão (lucaslmonteiro68@gmail.com)")
-            print("2. Outro e-mail personalizado")
-            
-            try:
-                opcao = input("\nEscolha uma opção (1-2): ").strip()
-                
-                if opcao == "1":
-                    self.email_destino = "lucaslmonteiro68@gmail.com"
-                    print(f"✓ E-mail de destino configurado: {self.email_destino}")
-                    break
-                elif opcao == "2":
-                    while True:
-                        email = input("\nDigite o e-mail de destino: ").strip()
-                        if validar_email(email):
-                            self.email_destino = email
-                            print(f"✓ E-mail de destino configurado: {self.email_destino}")
-                            break
-                        else:
-                            print("❌ Formato de e-mail inválido! Digite um e-mail válido.")
-                    break
-                else:
-                    print("❌ Opção inválida. Digite 1 ou 2.")
-                    
-            except KeyboardInterrupt:
-                print("\n\nOperação cancelada pelo usuário.")
-                exit(0)
-            except Exception as e:
-                print(f"❌ Erro: {e}")
-    
     def extrair_texto_pdf(self, caminho_pdf: str) -> str:
         """
         Extrai texto de um arquivo PDF usando pdfplumber
@@ -92,58 +64,67 @@ class AnalisadorCurriculo:
         except Exception as e:
             raise Exception(f"Erro ao ler PDF {caminho_pdf}: {str(e)}")
     
-    def contar_palavras_chave(self, texto: str) -> Dict[str, int]:
+    def contar_palavras_chave(self, texto: str) -> Dict[str, Dict]:
         """
         Conta quantas palavras-chave de cada categoria aparecem no texto
+        Retorna: {categoria: {"contador": int, "palavras_encontradas": [str]}}
         """
         texto_lower = texto.lower()
-        contadores = {}
+        resultado = {}
         
         for categoria, palavras in self.palavras_chave.items():
             contador = 0
+            palavras_encontradas = []
+            
             for palavra in palavras:
                 padrao = r'\b' + re.escape(palavra.lower()) + r'\b'
                 matches = re.findall(padrao, texto_lower)
-                contador += len(matches)
-            contadores[categoria] = contador
+                if matches:
+                    contador += len(matches)
+                    palavras_encontradas.append(palavra)
             
-        return contadores
+            resultado[categoria] = {
+                "contador": contador,
+                "palavras_encontradas": palavras_encontradas
+            }
+            
+        return resultado
     
-    def classificar_candidato(self, contadores: Dict[str, int]) -> Tuple[str, str]:
+    def classificar_candidato(self, contadores: Dict[str, Dict]) -> Tuple[str, str]:
         """
         Classifica o candidato baseado nos contadores de palavras-chave
         """
         categorias_atingidas = {}
-        for categoria, contador in contadores.items():
-            if contador >= self.quantidade_minima:
-                categorias_atingidas[categoria] = contador
+        for categoria, dados in contadores.items():
+            if dados["contador"] >= self.quantidade_minima:
+                categorias_atingidas[categoria] = dados
         
         if "excelente" in categorias_atingidas:
-            return "excelente", f"Excelente! Encontramos {categorias_atingidas['excelente']} palavras-chave da categoria mais alta."
+            return "excelente", f"Excelente! Encontramos {categorias_atingidas['excelente']['contador']} palavras-chave da categoria mais alta."
         elif "bom" in categorias_atingidas:
-            return "bom", f"Bom! Encontramos {categorias_atingidas['bom']} palavras-chave da categoria boa."
+            return "bom", f"Bom! Encontramos {categorias_atingidas['bom']['contador']} palavras-chave da categoria boa."
         elif "medio" in categorias_atingidas:
-            return "medio", f"Médio. Encontramos {categorias_atingidas['medio']} palavras-chave da categoria média."
+            return "medio", f"Medio. Encontramos {categorias_atingidas['medio']['contador']} palavras-chave da categoria media."
         else:
-            return "ruim", "Não atingiu as expectativas iniciais. Nenhuma categoria foi atingida com a quantidade mínima de palavras-chave."
+            return "ruim", "Nao atingiu as expectativas iniciais. Nenhuma categoria foi atingida com a quantidade minima de palavras-chave."
     
     def criar_mensagem_email(self, categoria: str, descricao: str, nome_arquivo: str) -> EmailMessage:
         """
         Cria a mensagem de e-mail com o resultado da análise
         """
         msg = EmailMessage()
-        msg['Subject'] = "Resultado da análise do seu currículo"
+        msg['Subject'] = "Resultado da analise do seu curriculo"
         msg['From'] = self.email_remetente
         msg['To'] = self.email_destino
         
         corpo = f"""
-        Análise do currículo: {nome_arquivo}
+        Analise do curriculo: {nome_arquivo}
         
         Resultado: {categoria.upper()}
         
         {descricao}
         
-        Este e-mail foi enviado automaticamente pelo sistema de análise de currículos.
+        Este e-mail foi enviado automaticamente pelo sistema de analise de curriculos.
         """
         
         msg.set_content(corpo)
@@ -154,48 +135,87 @@ class AnalisadorCurriculo:
         Envia o e-mail usando Gmail SMTP
         """
         if not self.email_destino:
-            print("⚠️  E-mail de destino não configurado - pulando envio")
+            print("AVISO: E-mail de destino nao configurado - pulando envio")
             return False
         
         try:
-            print(f"📤 Enviando e-mail via {self.smtp_server}:{self.smtp_port}...")
-            print(f"📧 De: {self.email_remetente}")
-            print(f"📧 Para: {self.email_destino}")
+            print(f"Enviando e-mail via {self.smtp_server}:{self.smtp_port}...")
+            print(f"De: {self.email_remetente}")
+            print(f"Para: {self.email_destino}")
             
             with smtplib.SMTP(self.smtp_server, self.smtp_port) as server:
                 server.starttls()
                 server.login(self.email_remetente, self.senha_app)
                 server.send_message(mensagem)
             
-            print(f"✅ E-mail enviado com sucesso para {self.email_destino}")
             return True
             
         except Exception as e:
-            print(f"❌ Erro ao enviar e-mail: {str(e)}")
+            print(f"Erro ao enviar e-mail: {str(e)}")
             return False
     
     def analisar_curriculo(self, caminho_pdf: str) -> Dict:
         """
         Analisa um currículo completo: extrai texto, classifica e envia e-mail
         """
-        print(f"\n🔍 Analisando currículo: {caminho_pdf}")
+        print(f"Analisando curriculo: {caminho_pdf}")
         
+        # Extrai texto do PDF
         texto = self.extrair_texto_pdf(caminho_pdf)
-        print(f"📄 Texto extraído: {len(texto)} caracteres")
+        print(f"Texto extraido: {len(texto)} caracteres")
         
+        # Extrai e-mail automaticamente do currículo
+        email_encontrado = extrair_email_do_texto(texto)
+        if email_encontrado:
+            self.email_destino = email_encontrado
+            print(f"E-mail encontrado no curriculo: {self.email_destino}")
+        else:
+            print("AVISO: Nenhum e-mail encontrado no curriculo")
+            print("DICA: O resultado da analise sera apenas exibido no terminal")
+        
+        # Conta palavras-chave
         contadores = self.contar_palavras_chave(texto)
-        print("\n📊 Contadores de palavras-chave:")
-        for categoria, contador in contadores.items():
-            print(f"  🏷️  {categoria}: {contador}")
+        print("\nANALISE DETALHADA DAS PALAVRAS-CHAVE:")
+        print("=" * 60)
         
+        for categoria, dados in contadores.items():
+            print(f"\nCATEGORIA: {categoria.upper()}")
+            print(f"  Contador: {dados['contador']}")
+            if dados['palavras_encontradas']:
+                print(f"  CARACTERISTICAS ENCONTRADAS: {', '.join(dados['palavras_encontradas'])}")
+            else:
+                print(f"  CARACTERISTICAS ENCONTRADAS: Nenhuma")
+        
+        # Classifica o candidato
         categoria, descricao = self.classificar_candidato(contadores)
-        print(f"\n🏆 Classificação: {categoria.upper()}")
-        print(f"📝 Descrição: {descricao}")
+        print(f"\nCLASSIFICACAO FINAL: {categoria.upper()}")
+        print(f"Descricao: {descricao}")
         
+        # Mostra resumo das características que determinaram a classificação
+        print(f"\nRESUMO DA CLASSIFICACAO:")
+        print("-" * 40)
+        if categoria != "ruim":
+            dados_categoria = contadores[categoria]
+            if dados_categoria['palavras_encontradas']:
+                print(f"As seguintes caracteristicas foram encontradas:")
+                for palavra in dados_categoria['palavras_encontradas']:
+                    print(f"  - {palavra}")
+            else:
+                print("Nenhuma caracteristica especifica foi encontrada.")
+        else:
+            print("Nenhuma categoria atingiu o minimo de 2 caracteristicas.")
+            print("Caracteristicas encontradas em cada categoria:")
+            for cat, dados in contadores.items():
+                if dados['palavras_encontradas']:
+                    print(f"  {cat}: {', '.join(dados['palavras_encontradas'])}")
+                else:
+                    print(f"  {cat}: Nenhuma")
+        
+        # Cria e envia e-mail (se e-mail foi encontrado)
         nome_arquivo = os.path.basename(caminho_pdf)
         mensagem = self.criar_mensagem_email(categoria, descricao, nome_arquivo)
         
-        if self.enviar_email(mensagem):
+        if self.email_destino and self.enviar_email(mensagem):
             resultado = {
                 "arquivo": caminho_pdf,
                 "categoria": categoria,
@@ -218,47 +238,48 @@ def main():
     """
     Função principal
     """
-    print("🚀 ANALISADOR DE CURRÍCULOS PDF")
+    print("ANALISADOR DE CURRICULOS PDF")
     print("=" * 50)
-    print("📧 VERSÃO GMAIL - ENVIO REAL")
+    print("VERSAO GMAIL - ENVIO AUTOMATICO")
     print("=" * 50)
-    print("💡 Durante a apresentação, alguém pode fornecer seu e-mail")
-    print("💡 O programa enviará o e-mail REALMENTE via Gmail")
+    print("DICA: O programa analisa o curriculo e extrai o e-mail automaticamente")
+    print("DICA: O resultado e enviado para o e-mail encontrado no curriculo")
     print("=" * 50)
     
-    analisador = AnalisadorCurriculo()
-    analisador.configurar_email_destino()
-    
+    # Seleciona arquivo PDF primeiro
     print("\n" + "="*50)
     print("SELECIONAR ARQUIVO PDF")
     print("="*50)
     
     while True:
-        caminho_curriculo = input("\nDigite o caminho do arquivo PDF: ").strip()
+        caminho_curriculo = input("\nDigite o caminho do curriculo PDF: ").strip()
         caminho_curriculo = caminho_curriculo.strip('"\'')
         
         if os.path.exists(caminho_curriculo):
             break
         else:
-            print(f"❌ Arquivo não encontrado: {caminho_curriculo}")
-            print("💡 Dica: Você pode arrastar o arquivo PDF para esta janela")
+            print(f"ERRO: Arquivo nao encontrado: {caminho_curriculo}")
+            print("DICA: Voce pode arrastar o arquivo PDF para esta janela")
     
+    # Cria o analisador e analisa o currículo
+    analisador = AnalisadorCurriculo()
     resultado = analisador.analisar_curriculo(caminho_curriculo)
     
+    # Mostra resultado final
     print("\n" + "="*50)
-    print("RESULTADO FINAL DA ANÁLISE")
+    print("RESULTADO FINAL DA ANALISE")
     print("="*50)
-    print(f"📁 Arquivo: {resultado['arquivo']}")
-    print(f"🏆 Categoria: {resultado['categoria'].upper()}")
-    print(f"📝 Descrição: {resultado['descricao']}")
-    print(f"📧 E-mail enviado: {'Sim' if resultado['email_enviado'] else 'Não'}")
+    print(f"Arquivo: {resultado['arquivo']}")
+    print(f"Categoria: {resultado['categoria'].upper()}")
+    print(f"Descricao: {resultado['descricao']}")
+    print(f"E-mail enviado: {'Sim' if resultado['email_enviado'] else 'Nao'}")
     
     if resultado['email_enviado']:
-        print(f"📤 De: {analisador.email_remetente}")
-        print(f"📥 Para: {analisador.email_destino}")
-        print("\n🎉 E-mail enviado com sucesso!")
+        print(f"De: {analisador.email_remetente}")
+        print(f"Para: {analisador.email_destino}")
+        print("\nE-mail enviado com sucesso!")
     else:
-        print("\n💡 O e-mail não foi enviado, mas a análise foi concluída.")
+        print("\nDICA: O e-mail nao foi enviado, mas a analise foi concluida.")
 
 if __name__ == "__main__":
     main()
