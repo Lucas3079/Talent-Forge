@@ -30,8 +30,26 @@ def extrair_email_do_texto(texto: str) -> str:
         return matches[0]  # Retorna o primeiro e-mail encontrado
     return None
 
+def extrair_nome_candidato(texto: str) -> str:
+    """
+    Extrai o nome do candidato da primeira linha do currículo
+    Retorna apenas o primeiro nome (primeira palavra até o primeiro espaço)
+    """
+    linhas = texto.strip().split('\n')
+    if linhas:
+        primeira_linha = linhas[0].strip()
+        # Remove caracteres especiais e pega apenas a primeira palavra
+        nome_limpo = re.sub(r'[^\w\s]', '', primeira_linha)
+        palavras = nome_limpo.split()
+        if palavras:
+            return palavras[0]  # Retorna apenas o primeiro nome
+    return "Candidato"
+
 class AnalisadorCurriculo:
-    def __init__(self):
+    def __init__(self, nome_recrutador: str):
+        # Informações do recrutador
+        self.nome_recrutador = nome_recrutador
+        
         # Configurações das palavras-chave por categoria
         self.palavras_chave = {
             "excelente": ["SAP", "PP", "PM", "QM", "Mapeamento"],
@@ -48,6 +66,9 @@ class AnalisadorCurriculo:
         self.senha_app = "hbix rxyg ceby ajrx"
         self.smtp_server = "smtp.gmail.com"
         self.smtp_port = 587
+        
+        # Informações do candidato atual
+        self.nome_candidato = None
         
     def extrair_texto_pdf(self, caminho_pdf: str) -> str:
         """
@@ -113,19 +134,54 @@ class AnalisadorCurriculo:
         Cria a mensagem de e-mail com o resultado da análise
         """
         msg = EmailMessage()
-        msg['Subject'] = "Resultado da analise do seu curriculo"
+        msg['Subject'] = f"Resultado da analise do seu curriculo - {self.nome_recrutador}"
         msg['From'] = self.email_remetente
         msg['To'] = self.email_destino
         
-        corpo = f"""
-        Analise do curriculo: {nome_arquivo}
+        # Mensagens personalizadas por categoria
+        if categoria == "excelente":
+            corpo = f"""Prezado(a) {self.nome_candidato},
+
+Estamos muito felizes com sua candidatura. Seu perfil apresentou excelente compatibilidade e, por isso, você já está avançando diretamente para a terceira fase do processo seletivo.
+
+Em breve informaremos os detalhes.
+
+Atenciosamente,
+{self.nome_recrutador}
+Capgemini"""
         
-        Resultado: {categoria.upper()}
+        elif categoria == "bom":
+            corpo = f"""Prezado(a) {self.nome_candidato},
+
+Após avaliação de seu perfil, verificamos uma boa compatibilidade com a posição em aberto. Por isso, você está convidado(a) a participar da segunda fase do processo seletivo.
+
+Em breve compartilharemos os próximos passos.
+
+Atenciosamente,
+{self.nome_recrutador}
+Capgemini"""
         
-        {descricao}
+        elif categoria == "medio":
+            corpo = f"""Prezado(a) {self.nome_candidato},
+
+Obrigado por participar do processo seletivo. Embora seu perfil apresente apenas uma compatibilidade parcial com a vaga, você foi selecionado(a) para seguir para a segunda fase.
+
+Em breve entraremos em contato com as próximas instruções.
+
+Atenciosamente,
+{self.nome_recrutador}
+Capgemini"""
         
-        Este e-mail foi enviado automaticamente pelo sistema de analise de curriculos.
-        """
+        else:  # categoria == "ruim"
+            corpo = f"""Prezado(a) {self.nome_candidato},
+
+Agradecemos sua participação em nosso processo seletivo. Após análise, identificamos que seu perfil não apresenta compatibilidade suficiente com a vaga no momento.
+
+Desejamos sucesso em sua trajetória profissional.
+
+Atenciosamente,
+{self.nome_recrutador}
+Capgemini"""
         
         msg.set_content(corpo)
         return msg
@@ -158,58 +214,46 @@ class AnalisadorCurriculo:
         """
         Analisa um currículo completo: extrai texto, classifica e envia e-mail
         """
-        print(f"Analisando curriculo: {caminho_pdf}")
+        print(f"\n{'='*50}")
+        print(f"ANALISANDO: {os.path.basename(caminho_pdf)}")
+        print(f"{'='*50}")
         
         # Extrai texto do PDF
         texto = self.extrair_texto_pdf(caminho_pdf)
-        print(f"Texto extraido: {len(texto)} caracteres")
+        
+        # Extrai nome do candidato
+        self.nome_candidato = extrair_nome_candidato(texto)
+        print(f"Candidato: {self.nome_candidato}")
         
         # Extrai e-mail automaticamente do currículo
         email_encontrado = extrair_email_do_texto(texto)
         if email_encontrado:
             self.email_destino = email_encontrado
-            print(f"E-mail encontrado no curriculo: {self.email_destino}")
+            print(f"E-mail: {self.email_destino}")
         else:
-            print("AVISO: Nenhum e-mail encontrado no curriculo")
-            print("DICA: O resultado da analise sera apenas exibido no terminal")
+            print("AVISO: E-mail nao encontrado")
+            self.email_destino = None
         
         # Conta palavras-chave
         contadores = self.contar_palavras_chave(texto)
-        print("\nANALISE DETALHADA DAS PALAVRAS-CHAVE:")
-        print("=" * 60)
-        
-        for categoria, dados in contadores.items():
-            print(f"\nCATEGORIA: {categoria.upper()}")
-            print(f"  Contador: {dados['contador']}")
-            if dados['palavras_encontradas']:
-                print(f"  CARACTERISTICAS ENCONTRADAS: {', '.join(dados['palavras_encontradas'])}")
-            else:
-                print(f"  CARACTERISTICAS ENCONTRADAS: Nenhuma")
         
         # Classifica o candidato
         categoria, descricao = self.classificar_candidato(contadores)
-        print(f"\nCLASSIFICACAO FINAL: {categoria.upper()}")
-        print(f"Descricao: {descricao}")
+        print(f"Classificacao: {categoria.upper()}")
         
-        # Mostra resumo das características que determinaram a classificação
-        print(f"\nRESUMO DA CLASSIFICACAO:")
-        print("-" * 40)
+        # Mostra características encontradas
         if categoria != "ruim":
             dados_categoria = contadores[categoria]
             if dados_categoria['palavras_encontradas']:
-                print(f"As seguintes caracteristicas foram encontradas:")
-                for palavra in dados_categoria['palavras_encontradas']:
-                    print(f"  - {palavra}")
-            else:
-                print("Nenhuma caracteristica especifica foi encontrada.")
+                print(f"Caracteristicas: {', '.join(dados_categoria['palavras_encontradas'])}")
         else:
-            print("Nenhuma categoria atingiu o minimo de 2 caracteristicas.")
-            print("Caracteristicas encontradas em cada categoria:")
+            # Para candidatos ruins, mostra o que foi encontrado em cada categoria
+            encontradas = []
             for cat, dados in contadores.items():
                 if dados['palavras_encontradas']:
-                    print(f"  {cat}: {', '.join(dados['palavras_encontradas'])}")
-                else:
-                    print(f"  {cat}: Nenhuma")
+                    encontradas.append(f"{cat}: {', '.join(dados['palavras_encontradas'])}")
+            if encontradas:
+                print(f"Encontrado: {' | '.join(encontradas)}")
         
         # Cria e envia e-mail (se e-mail foi encontrado)
         nome_arquivo = os.path.basename(caminho_pdf)
@@ -221,7 +265,8 @@ class AnalisadorCurriculo:
                 "categoria": categoria,
                 "descricao": descricao,
                 "contadores": contadores,
-                "email_enviado": True
+                "email_enviado": True,
+                "nome_candidato": self.nome_candidato
             }
         else:
             resultado = {
@@ -229,7 +274,8 @@ class AnalisadorCurriculo:
                 "categoria": categoria,
                 "descricao": descricao,
                 "contadores": contadores,
-                "email_enviado": False
+                "email_enviado": False,
+                "nome_candidato": self.nome_candidato
             }
         
         return resultado
@@ -239,47 +285,78 @@ def main():
     Função principal
     """
     print("ANALISADOR DE CURRICULOS PDF")
-    print("=" * 50)
+    print("=" * 40)
     print("VERSAO GMAIL - ENVIO AUTOMATICO")
-    print("=" * 50)
-    print("DICA: O programa analisa o curriculo e extrai o e-mail automaticamente")
-    print("DICA: O resultado e enviado para o e-mail encontrado no curriculo")
-    print("=" * 50)
+    print("=" * 40)
     
-    # Seleciona arquivo PDF primeiro
-    print("\n" + "="*50)
-    print("SELECIONAR ARQUIVO PDF")
-    print("="*50)
+    # Captura nome do recrutador
+    print("\n" + "="*40)
+    print("IDENTIFICACAO")
+    print("="*40)
+    nome_recrutador = input("Nome do recrutador: ").strip()
+    if not nome_recrutador:
+        nome_recrutador = "Recrutador"
     
+    # Captura pasta de currículos
+    print("\n" + "="*40)
+    print("SELECIONAR PASTA")
+    print("="*40)
     while True:
-        caminho_curriculo = input("\nDigite o caminho do curriculo PDF: ").strip()
-        caminho_curriculo = caminho_curriculo.strip('"\'')
+        pasta_curriculos = input("Caminho da pasta com curriculos: ").strip()
+        pasta_curriculos = pasta_curriculos.strip('"\'')
         
-        if os.path.exists(caminho_curriculo):
+        if os.path.exists(pasta_curriculos) and os.path.isdir(pasta_curriculos):
             break
         else:
-            print(f"ERRO: Arquivo nao encontrado: {caminho_curriculo}")
-            print("DICA: Voce pode arrastar o arquivo PDF para esta janela")
+            print("ERRO: Pasta nao encontrada ou nao e uma pasta valida")
     
-    # Cria o analisador e analisa o currículo
-    analisador = AnalisadorCurriculo()
-    resultado = analisador.analisar_curriculo(caminho_curriculo)
+    # Busca todos os arquivos PDF na pasta
+    pdfs_encontrados = []
+    for arquivo in os.listdir(pasta_curriculos):
+        if arquivo.lower().endswith('.pdf'):
+            caminho_completo = os.path.join(pasta_curriculos, arquivo)
+            pdfs_encontrados.append(caminho_completo)
     
-    # Mostra resultado final
-    print("\n" + "="*50)
-    print("RESULTADO FINAL DA ANALISE")
-    print("="*50)
-    print(f"Arquivo: {resultado['arquivo']}")
-    print(f"Categoria: {resultado['categoria'].upper()}")
-    print(f"Descricao: {resultado['descricao']}")
-    print(f"E-mail enviado: {'Sim' if resultado['email_enviado'] else 'Nao'}")
+    if not pdfs_encontrados:
+        print("ERRO: Nenhum arquivo PDF encontrado na pasta")
+        return
     
-    if resultado['email_enviado']:
-        print(f"De: {analisador.email_remetente}")
-        print(f"Para: {analisador.email_destino}")
-        print("\nE-mail enviado com sucesso!")
-    else:
-        print("\nDICA: O e-mail nao foi enviado, mas a analise foi concluida.")
+    print(f"Encontrados {len(pdfs_encontrados)} curriculos PDF")
+    
+    # Cria o analisador
+    analisador = AnalisadorCurriculo(nome_recrutador)
+    
+    # Lista para armazenar resultados
+    resultados_analise = []
+    
+    # Loop para analisar todos os currículos da pasta
+    for i, caminho_pdf in enumerate(pdfs_encontrados, 1):
+        print(f"\n{'='*50}")
+        print(f"CURRICULO {i} DE {len(pdfs_encontrados)}")
+        print(f"{'='*50}")
+        
+        # Analisa o currículo
+        resultado = analisador.analisar_curriculo(caminho_pdf)
+        resultados_analise.append(resultado)
+        
+        # Mostra resultado individual
+        print(f"Status: {'E-mail enviado' if resultado['email_enviado'] else 'E-mail nao enviado'}")
+    
+    # Mostra lista de todos os candidatos com classificações
+    print(f"\n{'='*60}")
+    print("LISTA DE CANDIDATOS ANALISADOS")
+    print(f"{'='*60}")
+    
+    for resultado in resultados_analise:
+        nome_candidato = resultado['nome_candidato']
+        categoria = resultado['categoria'].upper()
+        arquivo = os.path.basename(resultado['arquivo'])
+        print(f"{nome_candidato} ({categoria}) - {arquivo}")
+    
+    # Mostra resumo final
+    total_analisados = len(resultados_analise)
+    total_emails = sum(1 for r in resultados_analise if r['email_enviado'])
+    print(f"\nProcesso finalizado: {total_analisados} curriculos analisados e {total_emails} emails enviados")
 
 if __name__ == "__main__":
     main()
