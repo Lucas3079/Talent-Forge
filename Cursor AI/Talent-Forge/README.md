@@ -1,33 +1,33 @@
-# 🚀 Talent Forge - Analisador Inteligente de Currículos
+# Talent Forge - Analisador Inteligente de Currículos
 
-## 📋 Descrição
+## Descrição
 
 O **Talent Forge** é um sistema automatizado de análise de currículos PDF desenvolvido especificamente para vagas de **Desenvolvimento com foco em LLM e IA**. O sistema utiliza inteligência artificial para classificar candidatos baseado em características técnicas e enviar e-mails personalizados automaticamente.
 
-## ✨ Funcionalidades Principais
+## Funcionalidades Principais
 
-### 🔍 **Análise Inteligente de Currículos**
+### **Análise Inteligente de Currículos**
 
 - **Extração automática** de texto de arquivos PDF
 - **Reconhecimento de características técnicas** em português e inglês
 - **Sistema de sinônimos** para evitar duplicação de conceitos
 - **Classificação hierárquica** baseada na quantidade de características encontradas
 
-### 📧 **Sistema de E-mail Automático**
+### **Sistema de E-mail Automático**
 
 - **Envio automático** via Gmail SMTP
 - **Mensagens personalizadas** por nível de classificação
 - **Extração automática** de e-mail do currículo
 - **Identificação automática** do nome do candidato
 
-### 🎯 **Classificação Hierárquica Inteligente**
+### **Classificação Hierárquica Inteligente**
 
-- **🏆 EXCELENTE**: Mais de 8 características → 3ª fase direta
-- **🥈 BOM**: 6 a 8 características → 2ª fase
-- **🥉 MÉDIO**: 3 a 5 características → 2ª fase
-- **❌ RUIM**: 0 a 2 características → Não selecionado
+- **EXCELENTE**: Mais de 8 características → 3ª fase direta
+- **BOM**: 6 a 8 características → 2ª fase
+- **MÉDIO**: 3 a 5 características → 2ª fase
+- **RUIM**: 0 a 2 características → Não selecionado
 
-## 🛠️ Tecnologias Utilizadas
+## Tecnologias Utilizadas
 
 - **Python 3.7+**
 - **pdfplumber** - Extração de texto de PDFs
@@ -36,7 +36,7 @@ O **Talent Forge** é um sistema automatizado de análise de currículos PDF des
 - **re** - Expressões regulares para busca
 - **os** - Operações de sistema de arquivos
 
-## 📦 Instalação
+## Instalação
 
 ### Pré-requisitos
 
@@ -65,7 +65,7 @@ self.email_remetente = "seu-email@gmail.com"
 self.senha_app = "sua-senha-de-app"
 ```
 
-## 🚀 Como Usar
+## Como Usar
 
 ### 1. **Execução do Sistema**
 
@@ -88,7 +88,7 @@ O sistema irá:
 - ✅ Enviar e-mails personalizados
 - ✅ Gerar relatório completo
 
-## 🎯 Sistema de Características Técnicas
+## Sistema de Características Técnicas
 
 ### **Tecnologias Core (40+ características)**
 
@@ -108,33 +108,33 @@ O sistema reconhece automaticamente variações em português e inglês:
 - **"LLM"** = "large language models", "language models"
 - **"DevOps"** = "containers", "docker", "kubernetes", "ci/cd"
 
-## 📊 Estrutura de Classificação
+## Estrutura de Classificação
 
-### **🏆 NÍVEL EXCELENTE (>8 características)**
+### **NÍVEL EXCELENTE (>8 características)**
 
 - **Perfil ideal** para a vaga
 - **Avança direto** para 3ª fase (entrevista técnica)
 - **Domínio completo** das tecnologias essenciais
 
-### **🥈 NÍVEL BOM (6-8 características)**
+### **NÍVEL BOM (6-8 características)**
 
 - **Base sólida** em desenvolvimento
 - **Conhecimentos** em frontend e DevOps
 - **2ª fase** para avaliação de experiência com LLMs
 
-### **🥉 NÍVEL MÉDIO (3-5 características)**
+### **NÍVEL MÉDIO (3-5 características)**
 
 - **Compatibilidade parcial** com a vaga
 - **Conhecimentos** em ferramentas específicas de LLM
 - **2ª fase** para avaliação técnica geral
 
-### **❌ NÍVEL RUIM (0-2 características)**
+### **NÍVEL RUIM (0-2 características)**
 
 - **Compatibilidade insuficiente** com os requisitos
 - **Não selecionado** para próximas fases
 - **Feedback construtivo** para desenvolvimento
 
-## 📧 Sistema de E-mails
+## Sistema de E-mails
 
 ### **Configuração Gmail**
 
@@ -149,7 +149,7 @@ O sistema reconhece automaticamente variações em português e inglês:
 - **Tom profissional** e motivacional
 - **Informações essenciais** de forma concisa
 
-## 📁 Estrutura de Arquivos
+## Estrutura de Arquivos
 
 ```
 Talent-Forge/
@@ -159,7 +159,7 @@ Talent-Forge/
 └── pasta_curriculos/      # Pasta com PDFs para análise
 ```
 
-## 🔧 Configurações Personalizáveis
+## Configurações Personalizáveis
 
 ### **Palavras-chave**
 
@@ -183,7 +183,7 @@ else:                              # Ruim
 - Personalize mensagens por categoria
 - Modifique assinatura e informações da empresa
 
-## 📈 Relatórios e Saída
+## Relatórios e Saída
 
 ### **Console em Tempo Real**
 
@@ -199,7 +199,7 @@ else:                              # Ruim
 - Total de e-mails enviados
 - Estatísticas do processo
 
-## 🚨 Tratamento de Erros
+## Tratamento de Erros
 
 ### **Validações Implementadas**
 
@@ -215,7 +215,7 @@ else:                              # Ruim
 - Avisos para situações não críticas
 - Confirmação de operações bem-sucedidas
 
-## 🔒 Segurança e Privacidade
+## Segurança e Privacidade
 
 ### **Credenciais**
 
@@ -229,7 +229,7 @@ else:                              # Ruim
 - **Temporário** (não armazenado permanentemente)
 - **Conformidade** com LGPD para dados pessoais
 
-## 🚀 Casos de Uso
+## Casos de Uso
 
 ### **Recrutamento em Massa**
 
@@ -249,7 +249,7 @@ else:                              # Ruim
 - **Fases definidas** por nível de compatibilidade
 - **Feedback personalizado** para cada categoria
 
-## 🔮 Funcionalidades Futuras
+## Funcionalidades Futuras
 
 ### **Melhorias Planejadas**
 
@@ -267,7 +267,7 @@ else:                              # Ruim
 - [ ] Integração com LinkedIn e GitHub
 - [ ] Avaliação de projetos open source
 
-## 🤝 Contribuição
+## Contribuição
 
 ### **Como Contribuir**
 
@@ -285,7 +285,7 @@ else:                              # Ruim
 - **Novos formatos de saída**
 - **Testes e validações**
 
-## 📞 Suporte
+## Suporte
 
 ### **Documentação**
 
@@ -299,14 +299,10 @@ else:                              # Ruim
 - Inclua detalhes do erro e ambiente
 - Anexe logs e arquivos de exemplo
 
-## 📄 Licença
+## Licença
 
 Este projeto está sob licença MIT. Veja o arquivo LICENSE para detalhes.
 
-## 👨‍💻 Autor
+## Autor
 
 Desenvolvido para otimizar processos de recrutamento técnico com foco em desenvolvimento e inteligência artificial.
-
----
-
-**⭐ Se este projeto foi útil para você, considere dar uma estrela no repositório!**
